@@ -1,0 +1,123 @@
+MANOVA IN SAS - CAREER GROUPS
+proc glm data=talent;
+class cargroup;
+model english reading mechanic abstract math office = cargroup;
+manova h = cargroup / printe printh summary;
+run; quit;
+
+p-value <0.01 reject the null hypothesis and that the mean scores for pairs are equivalent.
+there are at least one set of responses for the groups that are different.
+
+Each response variable is evaluated: math <0.01 - distinguishes among career groups
+Office skills: <0.01 - distinguishes among career groups
+
+
+USING SAS FOR TWO-SAMPLE CLASSIFICATION
+Future Career Plans(1=business, 2=medicine, 3=teaching)
+Gender(1=male, 2=female)
+Scores on 6 tests:
+   English
+   Reading
+   Mechanical Reasoning
+   Abstract Reasoning
+   Math
+   Office Skills
+
+We want to assess each of these 6 tests simutaneously.
+
+SAS Code:
+proc glm data=talent;
+class cargroup gender;
+model english reading mechanic abstract math office = cargroup | gender;
+manova h /* hypothesis group */ = cargroup | gender / printe printh summary;
+run; quit;
+
+The Wilk's lambda is the test statistic is the inverse of most test statistics - smaller more significant
+If we do not reject the null, we examine the interaction plots for behavior of the interaction
+between the main effects.
+
+assess the Error SSCP matrix - similar to SS for ANOVA
+correlation matrix
+test statistics: wilk's lambda 
+p-value 0.03 - reject teh null and state there is an interaction between gender and career group
+when there is not a significant impact on interaction effects we should look at the 
+main effects individually.
+
+math skills: cargroup 0.0009, gender 0.0026 cargroup*gender 0.0003
+math skills has an interaction effect
+
+you might take out reading and abstract (non-significant variables) and then
+leave in Math and the other 2 and re-run the model.
+
+
+Linear Discriminant Analysis: we want to classify observations into two or more
+groups based on multiple response variables (machine learning)
+
+MANOVA: we want to examine differences in means of multiple response variables 
+across groups (hypothesis testing)
+
+LDA - supervised classifcation
+
+LDA creates a linear function that separates a data set into two more more populations
+Example: swiss bank notes
+genuine and counterfeit - 2 populations
+six measures are taken on each note:
+legnth
+right hand and left hand
+top and bottom
+diagonal
+
+we then take these measurements and model them to determine if the bank note
+is counterfeit or genuine.
+
+Assumptions:
+common mean vector for each population
+indepdently sampled subjects
+multivariate normally distrubted data
+variance-covariance matrices for each population are the same.
+quadaratric variance-covariance matrices may be different. 
+
+linear score function: computed for each population
+prior probabilites are estimated from the training data.
+
+SAS Code for LDA:
+data insect;
+infile '';
+input species $ joint1 joint2 aedeagus;
+run;
+
+data test;
+input joint1 joint2 aedeagus;
+cards;
+194 124 49
+;
+
+proc discrim data=insect pool=test /* determines linear vs quadratic */
+crossvalidate testdata=test testout=a;
+class species;
+var joint1 joint2 aedeagus;
+run;
+
+proc print;
+
+LDA will output linear coefficients to determine which species that the test 
+statistic belongs to.
+
+Bayesian Analysis:
+regards the population to which a subject belongs as a parameter in the model.
+Treats the identifcation of the population a subject belongs to as a random
+variable.
+
+Using Priors in SAS Code:
+
+proc discrim data=insect pool=test crossvalidate testdata=test testout=a;
+class species;
+var joint1 join2 aedeagus;
+priors "a"=0.9 "b"=0.1;
+run;
+
+a 0.05 b 0.94 = 94% probablity that species is in class B
+
+Default for SAS is equal priors, but you can specify unequal priors which may
+influence the probability results. 
+
