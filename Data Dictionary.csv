@@ -1,0 +1,24 @@
+Variable,Description,Additional Details,Variable Type
+Player,Player name,n/a,Categorical
+Position,Basketball position,"PG = Point Guard; 
+SG = Shooting Guard; 
+SF = Small Forward; 
+PF = Power Forward; 
+C = Center",Categorical
+Still_in_league,"Still playing in NBA, as of start of 2017 NBA season",1=yes; 0=no,Numeric
+Age_first_yr,Age at the start of 2017 NBA season,n/a,Numeric
+Draft_pick,Position selected in player's respective draft,1-60; if undrafted = 61,Numeric
+Hght_noshoes,"Height w/o shoes, (inches)",n/a,Numeric
+Hght_wtshoes,"Height w/ shoes, (inches)",n/a,Numeric
+Wingspan,Wingspan (inches),n/a,Numeric
+Standing_reach,Standing reach (inches),n/a,Numeric
+Vert_max,Max vertical leap (inches),n/a,Numeric
+Vert_maxreach,Max reach from vertical (inches),n/a,Numeric
+Vert_nostep,Vertical w/t no steps (inches),n/a,Numeric
+Vert_nostep_reach,Reach from vertical w/ no step (inches),n/a,Numeric
+Weight,Weight (lbs),n/a,Numeric
+Body_fat,Body fat (%),n/a,Numeric
+Hand_length,Hand length (inches),n/a,Numeric
+Hand_width,Hand width (inches),n/a,Numeric
+agility,Duration to move around basketball key (seconds),n/a,Numeric
+sprint,Three quarter sprint (seconds),n/a,Numeric
