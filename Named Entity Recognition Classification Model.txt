@@ -1,0 +1,127 @@
+# Import Full Dataset and take random sample to reduce size
+import pandas as pd
+import numpy as np
+
+# Take sample from negative population so distribution isn't as skewed
+full= pd.read_csv("/var/app/anaconda/projects/bk31963/RegWHedgeFunds/full_pop.csv")
+neg = full.loc[full['found'] == 0]
+pos = full.loc[full['found'] == 1]
+samp_neg = neg.sample(frac=0.1, replace=False,random_state=42)
+
+frames = [samp_neg,pos]
+sample = pd.concat(frames)
+
+# Divide X and Y datasets
+X = sample['cl_text'].values
+Y = sample['found'].values
+
+
+# Split into 80/20 training/test
+from sklearn.model_selection import train_test_split
+X_train,X_test,Y_train,Y_test = train_test_split(X,Y,test_size=0.2, random_state = 42)
+
+# Output X and Y test data for inspection later on 
+#X_test_out=pd.DataFrame(X_test, columns=[['cl_text']]) 
+#X_test_out = X_test_out.to_csv('X_test_out.csv')
+#Y_test_out=pd.DataFrame(Y_test, columns=['found']) 
+#Y_test_out = Y_test_out.to_csv('Y_test_out.csv')
+
+
+# extract features using Term Frequency Inverse Document Frequency method
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_selection import SelectKBest, chi2
+
+# compute chi2 for each feature - test how closely each feature is correlated with it's class
+tvec = TfidfVectorizer(max_df=0.75,analyzer='word', max_features=2000,stop_words='english',ngram_range=(1, 2))
+X_train_tfidf = tvec.fit_transform(X_train)
+X_test_tfidf = tvec.transform(X_test)
+chi2score = chi2(X_train_tfidf, Y_train)[0]
+
+
+# Reduce the dimensions and assess accuracy on the test set
+from sklearn.linear_model import SGDClassifier
+
+ch2 = SelectKBest(chi2, k='all')
+X_train_chi2_selected = ch2.fit_transform(X_train_tfidf, Y_train)
+X_test_chi2_selected = ch2.transform(X_test_tfidf)
+SVM_clf_chi2 = SGDClassifier(random_state=42,penalty='l2',alpha=0.0003,class_weight ='balanced')
+SVM_clf_chi2.fit(X_train_chi2_selected, Y_train)
+
+
+
+import matplotlib.pyplot as plt
+%matplotlib inline
+
+plt.figure(figsize=(16,30))
+wscores = zip(tvec.get_feature_names(), chi2score)
+wchi2 = sorted(wscores, key=lambda x:x[1])
+topchi2 = zip(*wchi2[-100:])
+x = range(len(topchi2[1]))
+labels = topchi2[0]
+plt.barh(x,topchi2[1], align='center', alpha=0.2, color='b')
+plt.plot(topchi2[1], x, '-o', markersize=5, alpha=0.8, color='b')
+plt.yticks(x, labels)
+plt.xlabel('$\chi^2$')
+plt.title('Computed Chi2 values for each n-gram',size='25')
+
+
+chi2_values_df =pd.DataFrame(wchi2, columns=['string','chi2'])
+chi2_values_df = chi2_values_df.to_csv('chi2_values2.csv', index=False, header=True, encoding='utf-8')
+
+
+from sklearn.metrics import classification_report
+SVM_pred_chi2 = SVM_clf_chi2.predict(X_test_chi2_selected)
+print(np.mean(SVM_pred_chi2 == Y_test))
+
+# Classification report
+print(classification_report(Y_test,SVM_pred_chi2))
+
+
+# Compute confusion matrix
+from sklearn.metrics import confusion_matrix 
+
+import itertools
+def plot_confusion_matrix(cm, classes,
+                          normalize=False,
+                          title='Confusion matrix',
+                          cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print("Confusion Matrix")
+    else:
+        print('Confusion matrix')
+
+    print(cm)
+
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, format(cm[i, j], fmt),
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+
+
+# Compute confusion matrix
+from sklearn import metrics as mt
+SVM_conf_chi2 = mt.confusion_matrix(Y_test,SVM_pred_chi2)
+
+class_names = [0, 1]
+plot_confusion_matrix(SVM_conf_chi2, classes=class_names)
+plt.show()
+
+

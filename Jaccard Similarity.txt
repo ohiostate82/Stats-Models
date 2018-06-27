@@ -1,0 +1,85 @@
+# Import Modules
+import fuzzywuzzy
+from fuzzywuzzy import process
+from fuzzywuzzy import fuzz
+import pandas as pd
+from pandas import DataFrame
+import numpy as np
+import matplotlib.pyplot as plt
+import csv
+import re
+# Ignoring Levenshtein efficiency warning - its already installed
+import warnings
+warnings.filterwarnings("ignore")
+
+# Define function to import both csv files
+def parse_csv(path):
+    with open(path,'r') as f:
+        reader = csv.reader(f, delimiter=',')
+        next(reader) # Skips column headers to start at row 2
+        for row in reader:
+            for cell in row:
+                cell = re.sub(r'', '',cell)
+                yield cell
+                
+# Create empty list for results                
+results = []
+
+# Create lookup dictionary from Affiliate list
+with open('/var/app/anaconda/projects/bk31963/RegWHedgeFunds/affiliate.csv', mode='r') as infile:
+    reader = csv.reader(infile)
+    mydict = {rows[0]:rows[0] for rows in reader}
+
+# Code note: process.extract has a bug - using processor=lambda x: x, fuzz.ratio implementation
+# Compute the match ratio
+for row in parse_csv('/var/app/anaconda/projects/bk31963/RegWHedgeFunds/hedge_fund.csv'):
+    for found, score, matchrow  in process.extract(row, mydict,scorer=fuzz.ratio, processor=lambda x: x, limit=1):
+        if score >= 50:
+            #print('%d%% match: "%s" with "%s" ' % (score, row, found))
+            results.append((row, found, score))
+
+
+
+# Confirm Results are in list form
+results
+
+
+
+# Convert Results list to Dataframe
+results_df = pd.DataFrame(np.array(results), columns = ('INSTR_DESC1', 'Short_Name', 'Score'))
+results_df.to_csv('hedge_fund_securities.csv')
+results_df.info()
+
+# Join back to full dataset to get additional columns
+aff = pd.read_csv('/var/app/anaconda/projects/bk31963/RegWHedgeFunds/affiliate.csv')
+hf = pd.read_csv('/var/app/anaconda/projects/bk31963/RegWHedgeFunds/hedge_fund.csv')
+
+# Merge with Hedge Funds 
+hf_results_merge = pd.merge(results_df,
+                 hf[['INSTR_DESC1','CUSIP_NO','APPLIED_LV_PERCENT','INSTR_23A']],
+                on='INSTR_DESC1',
+                how='left')
+
+# Merge with Affiliate List
+hf_aff_results_merge = pd.merge(hf_results_merge,
+                 aff[['Short_Name','GFCID','Reporting_23AB']],
+                on='Short_Name',
+                how='left')
+
+# Remove duplicate matches. The 'as_index = False' statement ensures INSTR_DESC1 is retained as a column.
+final_merge = hf_aff_results_merge.groupby(['INSTR_DESC1'], as_index = False).first()
+
+
+# Inspect final merged dataframe for consistency and completeness 
+final_merge.info()
+
+
+# Reconciliation 1: If transaction is not 23AB in Affiliate list or if 23AB flags match between HF and AFF, then Pass
+final_merge['Rec_1'] = np.where(np.logical_or(final_merge['Reporting_23AB'] == final_merge['INSTR_23A'],
+                                              final_merge['Reporting_23AB']== 'N' ),'Pass', 'Fail')
+
+# Reconciliation 2: If Rec 1 = Pass then Pass; if not a Pass but Applied_LV_Percent is 0, then Pass
+final_merge['Rec_2'] = np.where(final_merge['Rec_1'] == 'Pass','Pass',
+                                np.where(np.logical_and(final_merge['Rec_1'] == 'Fail',
+                                                        final_merge['APPLIED_LV_PERCENT']== 0 ),'Pass', 'Fail'))
+final_merge
