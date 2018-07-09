@@ -1,6 +1,5 @@
 Variable,Description,Additional Details,Variable Type
 Player,Player name,n/a,Categorical
-Position,Basketball position,PG = Point Guard; SG = Shooting Guard; SF = Small Forward; PF = Power Forward; C = Center,Categorical
 College,Player college,n/a,Categorical
 Draft_yr,Year drafted,n/a,Ordinal
 fnl_coll_rpi,Final Ratings Percentage Index of player's final college season,n/a,Ordinal
@@ -26,7 +25,7 @@ ast,Average assists per game from college career,n/a,Numeric
 fg2_pct,Average 2 point field goal percentage from college career,n/a,Numeric
 fg3_pct,Average 3 point field goal percentage from college career,n/a,Numeric
 ft_pct,Average free throw percentage from college career,n/a,Numeric
-Guards,Binary variable indcating guard position,1=Guards; 0=not Guards,Numeric
-Forwards,Binary variable indcating forward position,1=Forwards; 0=not Forwards,Numeric
-Centers,Binary variable indcating center position,1=Centers; 0=not Centers,Numeric
-Drafted,Binary variable indcating drafted or not drafted,1=yes; 0=no,Numeric
+Guards,Binary variable indicating guard position,1=Guards; 0=not Guards,Numeric
+Forwards,Binary variable indicating forward position,1=Forwards; 0=not Forwards,Numeric
+Centers,Binary variable indicating center position,1=Centers; 0=not Centers,Numeric
+Drafted,Binary variable indicating drafted or not drafted,1=yes; 0=no,Numeric
